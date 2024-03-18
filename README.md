@@ -1,48 +1,26 @@
-# Tests
-eslint
-const createRule = ESLintUtils.RuleCreator((name) => name);
+module.exports = {
+  create: function (context) {
+    return {
+      'TemplateElement, Literal' (node) {
+        if (node.value && typeof node.value.raw === 'string') {
+          const rawValue = node.value.raw.trim();
 
-module.exports = createRule({
-    name: 'require-routerlink-events',
-    meta: {
-        type: 'suggestion',
-        docs: {
-            description: 'Require key events for <div> elements with [routerLink] directive in Angular templates.',
-            category: 'Best Practices',
-            recommended: true,
-            url: 'https://example.com/docs/rules/require-routerlink-events',
-        },
-        fixable: null,
-        schema: [], // no options
-    },
+          // Regular expression to match <div> elements with routerLink directive
+          const divRegex = /<div\s[^>]*routerLink\s*=\s*['"][^'"]+['"][^>]*>/g;
 
-    create: function (context) {
-        return {
-            'Property[key.name="routerLink"]': function (node) {
-                const parentDiv = findParentDiv(node);
-                if (parentDiv) {
-                    const hasKeyEvent = parentDiv.value.elements.some(attr => {
-                        if (attr.type === 'JSXAttribute' && (attr.name.name === '(keydown)' || attr.name.name === '(keypress)' || attr.name.name === '(click)')) {
-                            return true;
-                        }
-                        return false;
-                    });
-                    if (!hasKeyEvent) {
-                        context.report({
-                            node: parentDiv,
-                            message: 'Missing key event (keydown, keypress, or click) for <div> element with [routerLink] directive.',
-                        });
-                    }
-                }
-            },
-        };
-    },
-});
-
-function findParentDiv(node) {
-    let current = node;
-    while (current && current.type !== 'JSXElement') {
-        current = current.parent;
-    }
-    return current && current.openingElement.name.name === 'div' ? current.openingElement : null;
-}
+          // Check each match
+          let match;
+          while ((match = divRegex.exec(rawValue)) !== null) {
+            // Check if key events are present
+            if (!/\(keydown\)|\(keypress\)|\(keyup\)/.test(match[0])) {
+              context.report({
+                node,
+                message: 'Div with routerLink directive should have key events for accessibility.',
+              });
+            }
+          }
+        }
+      },
+    };
+  },
+};
